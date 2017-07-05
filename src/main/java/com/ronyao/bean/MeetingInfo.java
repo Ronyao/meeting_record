@@ -25,6 +25,80 @@ public class MeetingInfo {
 
     private Integer meetingType;
 
+    private String meetingContent;
+
+    private Integer meetingIsopen;
+
+    private Department department;
+
+    private MeetingType type;
+
+    public MeetingInfo(Integer meetingId, String meetingName, Integer meetingDepartment, String meetingPlace, Date meetingDate, String meetingHost, String meetingPresent, String meetingSaver, String meetingAbstruct, String meetingRemarks, Integer meetingType, String meetingContent, Integer meetingIsopen, Department department, MeetingType type) {
+        this.meetingId = meetingId;
+        this.meetingName = meetingName;
+        this.meetingDepartment = meetingDepartment;
+        this.meetingPlace = meetingPlace;
+        this.meetingDate = meetingDate;
+        this.meetingHost = meetingHost;
+        this.meetingPresent = meetingPresent;
+        this.meetingSaver = meetingSaver;
+        this.meetingAbstruct = meetingAbstruct;
+        this.meetingRemarks = meetingRemarks;
+        this.meetingType = meetingType;
+        this.meetingContent = meetingContent;
+        this.meetingIsopen = meetingIsopen;
+        this.department = department;
+        this.type = type;
+    }
+
+    public MeetingInfo() {
+        super();
+    }
+
+    public MeetingInfo(Integer meetingId, String meetingName, Integer meetingDepartment,
+                       String meetingPlace, Date meetingDate, String meetingHost,
+                       String meetingPresent, String meetingSaver, String meetingAbstruct,
+                       String meetingRemarks, Integer meetingType, String meetingContent,
+                       Integer meetingIsopen) {
+        this.meetingId = meetingId;
+        this.meetingName = meetingName;
+        this.meetingDepartment = meetingDepartment;
+        this.meetingPlace = meetingPlace;
+        this.meetingDate = meetingDate;
+        this.meetingHost = meetingHost;
+        this.meetingPresent = meetingPresent;
+        this.meetingSaver = meetingSaver;
+        this.meetingAbstruct = meetingAbstruct;
+        this.meetingRemarks = meetingRemarks;
+        this.meetingType = meetingType;
+        this.meetingContent = meetingContent;
+        this.meetingIsopen = meetingIsopen;
+    }
+
+    public Integer getMeetingIsopen() {
+        return meetingIsopen;
+    }
+
+    public void setMeetingIsopen(Integer meetingIsopen) {
+        this.meetingIsopen = meetingIsopen;
+    }
+
+    public Department getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(Department department) {
+        this.department = department;
+    }
+
+    public MeetingType getType() {
+        return type;
+    }
+
+    public void setType(MeetingType type) {
+        this.type = type;
+    }
+
     public Integer getMeetingId() {
         return meetingId;
     }
@@ -111,5 +185,13 @@ public class MeetingInfo {
 
     public void setMeetingType(Integer meetingType) {
         this.meetingType = meetingType;
+    }
+
+    public String getMeetingContent() {
+        return meetingContent;
+    }
+
+    public void setMeetingContent(String meetingContent) {
+        this.meetingContent = meetingContent == null ? null : meetingContent.trim();
     }
 }

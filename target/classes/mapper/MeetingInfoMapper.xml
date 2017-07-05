@@ -13,6 +13,21 @@
     <result column="meeting_abstruct" jdbcType="VARCHAR" property="meetingAbstruct" />
     <result column="meeting_remarks" jdbcType="VARCHAR" property="meetingRemarks" />
     <result column="meeting_type" jdbcType="INTEGER" property="meetingType" />
+    <result column="meeting_isopen" jdbcType="TINYINT" property="meetingIsopen" />
+  </resultMap>
+  <resultMap extends="BaseResultMap" id="WithDTResultMap" type="com.ronyao.bean.MeetingInfo">
+    <result column="meeting_content" jdbcType="LONGVARCHAR" property="meetingContent" />
+    <association property="department" javaType="com.ronyao.bean.Department">
+      <id column="department_id"  property="departmentId" />
+      <result column="department_name"  property="departmentName" />
+    </association>
+    <association property="type" javaType="com.ronyao.bean.MeetingType" >
+      <id column="type_id"  property="typeId" />
+      <result column="type_name"  property="typeName" />
+    </association>
+  </resultMap>
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.ronyao.bean.MeetingInfo">
+    <result column="meeting_content" jdbcType="LONGVARCHAR" property="meetingContent" />
   </resultMap>
   <sql id="Example_Where_Clause">
     <where>
@@ -74,8 +89,50 @@
   </sql>
   <sql id="Base_Column_List">
     meeting_id, meeting_name, meeting_department, meeting_place, meeting_date, meeting_host, 
-    meeting_present, meeting_saver, meeting_abstruct, meeting_remarks, meeting_type
+    meeting_present, meeting_saver, meeting_abstruct, meeting_remarks, meeting_type, meeting_isopen
   </sql>
+  <sql id="Blob_Column_List">
+    meeting_content
+  </sql>
+  <sql id="DT_Column_List">
+    meeting_id, meeting_name, meeting_department, meeting_place, meeting_date, meeting_host,
+    meeting_present, meeting_saver, meeting_abstruct, meeting_remarks, meeting_type, meeting_isopen,
+    department_id, department_name, type_id, type_name
+  </sql>
+  <!--<select id="selectByWithDeptAndType" parameterType="com.ronyao.bean.MeetingInfoExample" resultType="WithDTResultMap">-->
+    <!--select-->
+    <!--<if test="distinct">-->
+      <!--distinct-->
+    <!--</if>-->
+    <!--<include refid="DT_Column_List" />-->
+    <!--,-->
+    <!--<include refid="Blob_Column_List" />-->
+    <!--FROM tb_meetinfo-->
+    <!--JOIN tb_depart ON tb_meetinfo.meeting_department=tb_depart.department_id-->
+    <!--JOIN tb_meettype ON tb_meetinfo.meeting_type=tb_meettype.type_id-->
+    <!--<if test="_parameter != null">-->
+      <!--<include refid="Example_Where_Clause" />-->
+    <!--</if>-->
+    <!--<if test="orderByClause != null">-->
+      <!--order by ${orderByClause}-->
+    <!--</if>-->
+  <!--</select>-->
+  <select id="selectByExampleWithBLOBs" parameterType="com.ronyao.bean.MeetingInfoExample" resultMap="ResultMapWithBLOBs">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from tb_meetinfo
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
   <select id="selectByExample" parameterType="com.ronyao.bean.MeetingInfoExample" resultMap="BaseResultMap">
     select
     <if test="distinct">
@@ -90,11 +147,20 @@
       order by ${orderByClause}
     </if>
   </select>
-  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="ResultMapWithBLOBs">
     select 
     <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
     from tb_meetinfo
     where meeting_id = #{meetingId,jdbcType=INTEGER}
+  </select>
+  <select id="getAllMeetingInfo" parameterType="com.ronyao.bean.MeetingInfo" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from tb_meetinfo
   </select>
   <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
     delete from tb_meetinfo
@@ -106,15 +172,20 @@
       <include refid="Example_Where_Clause" />
     </if>
   </delete>
-  <insert id="insert" parameterType="com.ronyao.bean.MeetingInfo">
+  <insert id="insert" parameterType="com.ronyao.bean.MeetingInfo" >
+    <selectKey resultType="int" keyProperty="meetingId">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
     insert into tb_meetinfo (meeting_id, meeting_name, meeting_department, 
       meeting_place, meeting_date, meeting_host, 
       meeting_present, meeting_saver, meeting_abstruct, 
-      meeting_remarks, meeting_type)
+      meeting_remarks, meeting_type, meeting_content
+      )
     values (#{meetingId,jdbcType=INTEGER}, #{meetingName,jdbcType=VARCHAR}, #{meetingDepartment,jdbcType=INTEGER}, 
       #{meetingPlace,jdbcType=VARCHAR}, #{meetingDate,jdbcType=DATE}, #{meetingHost,jdbcType=VARCHAR}, 
       #{meetingPresent,jdbcType=VARCHAR}, #{meetingSaver,jdbcType=VARCHAR}, #{meetingAbstruct,jdbcType=VARCHAR}, 
-      #{meetingRemarks,jdbcType=VARCHAR}, #{meetingType,jdbcType=INTEGER})
+      #{meetingRemarks,jdbcType=VARCHAR}, #{meetingType,jdbcType=INTEGER}, #{meetingContent,jdbcType=LONGVARCHAR}
+      )
   </insert>
   <insert id="insertSelective" parameterType="com.ronyao.bean.MeetingInfo">
     insert into tb_meetinfo
@@ -152,6 +223,9 @@
       <if test="meetingType != null">
         meeting_type,
       </if>
+      <if test="meetingContent != null">
+        meeting_content,
+      </if>
     </trim>
     <trim prefix="values (" suffix=")" suffixOverrides=",">
       <if test="meetingId != null">
@@ -186,6 +260,9 @@
       </if>
       <if test="meetingType != null">
         #{meetingType,jdbcType=INTEGER},
+      </if>
+      <if test="meetingContent != null">
+        #{meetingContent,jdbcType=LONGVARCHAR},
       </if>
     </trim>
   </insert>
@@ -231,7 +308,28 @@
       <if test="record.meetingType != null">
         meeting_type = #{record.meetingType,jdbcType=INTEGER},
       </if>
+      <if test="record.meetingContent != null">
+        meeting_content = #{record.meetingContent,jdbcType=LONGVARCHAR},
+      </if>
     </set>
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExampleWithBLOBs" parameterType="map">
+    update tb_meetinfo
+    set meeting_id = #{record.meetingId,jdbcType=INTEGER},
+      meeting_name = #{record.meetingName,jdbcType=VARCHAR},
+      meeting_department = #{record.meetingDepartment,jdbcType=INTEGER},
+      meeting_place = #{record.meetingPlace,jdbcType=VARCHAR},
+      meeting_date = #{record.meetingDate,jdbcType=DATE},
+      meeting_host = #{record.meetingHost,jdbcType=VARCHAR},
+      meeting_present = #{record.meetingPresent,jdbcType=VARCHAR},
+      meeting_saver = #{record.meetingSaver,jdbcType=VARCHAR},
+      meeting_abstruct = #{record.meetingAbstruct,jdbcType=VARCHAR},
+      meeting_remarks = #{record.meetingRemarks,jdbcType=VARCHAR},
+      meeting_type = #{record.meetingType,jdbcType=INTEGER},
+      meeting_content = #{record.meetingContent,jdbcType=LONGVARCHAR}
     <if test="_parameter != null">
       <include refid="Update_By_Example_Where_Clause" />
     </if>
@@ -286,10 +384,13 @@
       <if test="meetingType != null">
         meeting_type = #{meetingType,jdbcType=INTEGER},
       </if>
+      <if test="meetingContent != null">
+        meeting_content = #{meetingContent,jdbcType=LONGVARCHAR},
+      </if>
     </set>
     where meeting_id = #{meetingId,jdbcType=INTEGER}
   </update>
-  <update id="updateByPrimaryKey" parameterType="com.ronyao.bean.MeetingInfo">
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.ronyao.bean.MeetingInfo">
     update tb_meetinfo
     set meeting_name = #{meetingName,jdbcType=VARCHAR},
       meeting_department = #{meetingDepartment,jdbcType=INTEGER},
@@ -300,1201 +401,8 @@
       meeting_saver = #{meetingSaver,jdbcType=VARCHAR},
       meeting_abstruct = #{meetingAbstruct,jdbcType=VARCHAR},
       meeting_remarks = #{meetingRemarks,jdbcType=VARCHAR},
-      meeting_type = #{meetingType,jdbcType=INTEGER}
-    where meeting_id = #{meetingId,jdbcType=INTEGER}
-  </update>
-  <resultMap id="BaseResultMap" type="com.ronyao.bean.MeetingInfo">
-    <id column="meeting_id" jdbcType="INTEGER" property="meetingId" />
-    <result column="meeting_name" jdbcType="VARCHAR" property="meetingName" />
-    <result column="meeting_department" jdbcType="INTEGER" property="meetingDepartment" />
-    <result column="meeting_place" jdbcType="VARCHAR" property="meetingPlace" />
-    <result column="meeting_date" jdbcType="DATE" property="meetingDate" />
-    <result column="meeting_host" jdbcType="VARCHAR" property="meetingHost" />
-    <result column="meeting_present" jdbcType="VARCHAR" property="meetingPresent" />
-    <result column="meeting_saver" jdbcType="VARCHAR" property="meetingSaver" />
-    <result column="meeting_abstruct" jdbcType="VARCHAR" property="meetingAbstruct" />
-    <result column="meeting_remarks" jdbcType="VARCHAR" property="meetingRemarks" />
-    <result column="meeting_type" jdbcType="INTEGER" property="meetingType" />
-  </resultMap>
-  <sql id="Example_Where_Clause">
-    <where>
-      <foreach collection="oredCriteria" item="criteria" separator="or">
-        <if test="criteria.valid">
-          <trim prefix="(" prefixOverrides="and" suffix=")">
-            <foreach collection="criteria.criteria" item="criterion">
-              <choose>
-                <when test="criterion.noValue">
-                  and ${criterion.condition}
-                </when>
-                <when test="criterion.singleValue">
-                  and ${criterion.condition} #{criterion.value}
-                </when>
-                <when test="criterion.betweenValue">
-                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
-                </when>
-                <when test="criterion.listValue">
-                  and ${criterion.condition}
-                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
-                    #{listItem}
-                  </foreach>
-                </when>
-              </choose>
-            </foreach>
-          </trim>
-        </if>
-      </foreach>
-    </where>
-  </sql>
-  <sql id="Update_By_Example_Where_Clause">
-    <where>
-      <foreach collection="example.oredCriteria" item="criteria" separator="or">
-        <if test="criteria.valid">
-          <trim prefix="(" prefixOverrides="and" suffix=")">
-            <foreach collection="criteria.criteria" item="criterion">
-              <choose>
-                <when test="criterion.noValue">
-                  and ${criterion.condition}
-                </when>
-                <when test="criterion.singleValue">
-                  and ${criterion.condition} #{criterion.value}
-                </when>
-                <when test="criterion.betweenValue">
-                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
-                </when>
-                <when test="criterion.listValue">
-                  and ${criterion.condition}
-                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
-                    #{listItem}
-                  </foreach>
-                </when>
-              </choose>
-            </foreach>
-          </trim>
-        </if>
-      </foreach>
-    </where>
-  </sql>
-  <sql id="Base_Column_List">
-    meeting_id, meeting_name, meeting_department, meeting_place, meeting_date, meeting_host, 
-    meeting_present, meeting_saver, meeting_abstruct, meeting_remarks, meeting_type
-  </sql>
-  <select id="selectByExample" parameterType="com.ronyao.bean.MeetingInfoExample" resultMap="BaseResultMap">
-    select
-    <if test="distinct">
-      distinct
-    </if>
-    <include refid="Base_Column_List" />
-    from tb_meetinfo
-    <if test="_parameter != null">
-      <include refid="Example_Where_Clause" />
-    </if>
-    <if test="orderByClause != null">
-      order by ${orderByClause}
-    </if>
-  </select>
-  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
-    select 
-    <include refid="Base_Column_List" />
-    from tb_meetinfo
-    where meeting_id = #{meetingId,jdbcType=INTEGER}
-  </select>
-  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
-    delete from tb_meetinfo
-    where meeting_id = #{meetingId,jdbcType=INTEGER}
-  </delete>
-  <delete id="deleteByExample" parameterType="com.ronyao.bean.MeetingInfoExample">
-    delete from tb_meetinfo
-    <if test="_parameter != null">
-      <include refid="Example_Where_Clause" />
-    </if>
-  </delete>
-  <insert id="insert" parameterType="com.ronyao.bean.MeetingInfo">
-    insert into tb_meetinfo (meeting_id, meeting_name, meeting_department, 
-      meeting_place, meeting_date, meeting_host, 
-      meeting_present, meeting_saver, meeting_abstruct, 
-      meeting_remarks, meeting_type)
-    values (#{meetingId,jdbcType=INTEGER}, #{meetingName,jdbcType=VARCHAR}, #{meetingDepartment,jdbcType=INTEGER}, 
-      #{meetingPlace,jdbcType=VARCHAR}, #{meetingDate,jdbcType=DATE}, #{meetingHost,jdbcType=VARCHAR}, 
-      #{meetingPresent,jdbcType=VARCHAR}, #{meetingSaver,jdbcType=VARCHAR}, #{meetingAbstruct,jdbcType=VARCHAR}, 
-      #{meetingRemarks,jdbcType=VARCHAR}, #{meetingType,jdbcType=INTEGER})
-  </insert>
-  <insert id="insertSelective" parameterType="com.ronyao.bean.MeetingInfo">
-    insert into tb_meetinfo
-    <trim prefix="(" suffix=")" suffixOverrides=",">
-      <if test="meetingId != null">
-        meeting_id,
-      </if>
-      <if test="meetingName != null">
-        meeting_name,
-      </if>
-      <if test="meetingDepartment != null">
-        meeting_department,
-      </if>
-      <if test="meetingPlace != null">
-        meeting_place,
-      </if>
-      <if test="meetingDate != null">
-        meeting_date,
-      </if>
-      <if test="meetingHost != null">
-        meeting_host,
-      </if>
-      <if test="meetingPresent != null">
-        meeting_present,
-      </if>
-      <if test="meetingSaver != null">
-        meeting_saver,
-      </if>
-      <if test="meetingAbstruct != null">
-        meeting_abstruct,
-      </if>
-      <if test="meetingRemarks != null">
-        meeting_remarks,
-      </if>
-      <if test="meetingType != null">
-        meeting_type,
-      </if>
-    </trim>
-    <trim prefix="values (" suffix=")" suffixOverrides=",">
-      <if test="meetingId != null">
-        #{meetingId,jdbcType=INTEGER},
-      </if>
-      <if test="meetingName != null">
-        #{meetingName,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingDepartment != null">
-        #{meetingDepartment,jdbcType=INTEGER},
-      </if>
-      <if test="meetingPlace != null">
-        #{meetingPlace,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingDate != null">
-        #{meetingDate,jdbcType=DATE},
-      </if>
-      <if test="meetingHost != null">
-        #{meetingHost,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingPresent != null">
-        #{meetingPresent,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingSaver != null">
-        #{meetingSaver,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingAbstruct != null">
-        #{meetingAbstruct,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingRemarks != null">
-        #{meetingRemarks,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingType != null">
-        #{meetingType,jdbcType=INTEGER},
-      </if>
-    </trim>
-  </insert>
-  <select id="countByExample" parameterType="com.ronyao.bean.MeetingInfoExample" resultType="java.lang.Long">
-    select count(*) from tb_meetinfo
-    <if test="_parameter != null">
-      <include refid="Example_Where_Clause" />
-    </if>
-  </select>
-  <update id="updateByExampleSelective" parameterType="map">
-    update tb_meetinfo
-    <set>
-      <if test="record.meetingId != null">
-        meeting_id = #{record.meetingId,jdbcType=INTEGER},
-      </if>
-      <if test="record.meetingName != null">
-        meeting_name = #{record.meetingName,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingDepartment != null">
-        meeting_department = #{record.meetingDepartment,jdbcType=INTEGER},
-      </if>
-      <if test="record.meetingPlace != null">
-        meeting_place = #{record.meetingPlace,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingDate != null">
-        meeting_date = #{record.meetingDate,jdbcType=DATE},
-      </if>
-      <if test="record.meetingHost != null">
-        meeting_host = #{record.meetingHost,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingPresent != null">
-        meeting_present = #{record.meetingPresent,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingSaver != null">
-        meeting_saver = #{record.meetingSaver,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingAbstruct != null">
-        meeting_abstruct = #{record.meetingAbstruct,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingRemarks != null">
-        meeting_remarks = #{record.meetingRemarks,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingType != null">
-        meeting_type = #{record.meetingType,jdbcType=INTEGER},
-      </if>
-    </set>
-    <if test="_parameter != null">
-      <include refid="Update_By_Example_Where_Clause" />
-    </if>
-  </update>
-  <update id="updateByExample" parameterType="map">
-    update tb_meetinfo
-    set meeting_id = #{record.meetingId,jdbcType=INTEGER},
-      meeting_name = #{record.meetingName,jdbcType=VARCHAR},
-      meeting_department = #{record.meetingDepartment,jdbcType=INTEGER},
-      meeting_place = #{record.meetingPlace,jdbcType=VARCHAR},
-      meeting_date = #{record.meetingDate,jdbcType=DATE},
-      meeting_host = #{record.meetingHost,jdbcType=VARCHAR},
-      meeting_present = #{record.meetingPresent,jdbcType=VARCHAR},
-      meeting_saver = #{record.meetingSaver,jdbcType=VARCHAR},
-      meeting_abstruct = #{record.meetingAbstruct,jdbcType=VARCHAR},
-      meeting_remarks = #{record.meetingRemarks,jdbcType=VARCHAR},
-      meeting_type = #{record.meetingType,jdbcType=INTEGER}
-    <if test="_parameter != null">
-      <include refid="Update_By_Example_Where_Clause" />
-    </if>
-  </update>
-  <update id="updateByPrimaryKeySelective" parameterType="com.ronyao.bean.MeetingInfo">
-    update tb_meetinfo
-    <set>
-      <if test="meetingName != null">
-        meeting_name = #{meetingName,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingDepartment != null">
-        meeting_department = #{meetingDepartment,jdbcType=INTEGER},
-      </if>
-      <if test="meetingPlace != null">
-        meeting_place = #{meetingPlace,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingDate != null">
-        meeting_date = #{meetingDate,jdbcType=DATE},
-      </if>
-      <if test="meetingHost != null">
-        meeting_host = #{meetingHost,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingPresent != null">
-        meeting_present = #{meetingPresent,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingSaver != null">
-        meeting_saver = #{meetingSaver,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingAbstruct != null">
-        meeting_abstruct = #{meetingAbstruct,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingRemarks != null">
-        meeting_remarks = #{meetingRemarks,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingType != null">
-        meeting_type = #{meetingType,jdbcType=INTEGER},
-      </if>
-    </set>
-    where meeting_id = #{meetingId,jdbcType=INTEGER}
-  </update>
-  <update id="updateByPrimaryKey" parameterType="com.ronyao.bean.MeetingInfo">
-    update tb_meetinfo
-    set meeting_name = #{meetingName,jdbcType=VARCHAR},
-      meeting_department = #{meetingDepartment,jdbcType=INTEGER},
-      meeting_place = #{meetingPlace,jdbcType=VARCHAR},
-      meeting_date = #{meetingDate,jdbcType=DATE},
-      meeting_host = #{meetingHost,jdbcType=VARCHAR},
-      meeting_present = #{meetingPresent,jdbcType=VARCHAR},
-      meeting_saver = #{meetingSaver,jdbcType=VARCHAR},
-      meeting_abstruct = #{meetingAbstruct,jdbcType=VARCHAR},
-      meeting_remarks = #{meetingRemarks,jdbcType=VARCHAR},
-      meeting_type = #{meetingType,jdbcType=INTEGER}
-    where meeting_id = #{meetingId,jdbcType=INTEGER}
-  </update>
-  <resultMap id="BaseResultMap" type="com.ronyao.bean.MeetingInfo">
-    <id column="meeting_id" jdbcType="INTEGER" property="meetingId" />
-    <result column="meeting_name" jdbcType="VARCHAR" property="meetingName" />
-    <result column="meeting_department" jdbcType="INTEGER" property="meetingDepartment" />
-    <result column="meeting_place" jdbcType="VARCHAR" property="meetingPlace" />
-    <result column="meeting_date" jdbcType="DATE" property="meetingDate" />
-    <result column="meeting_host" jdbcType="VARCHAR" property="meetingHost" />
-    <result column="meeting_present" jdbcType="VARCHAR" property="meetingPresent" />
-    <result column="meeting_saver" jdbcType="VARCHAR" property="meetingSaver" />
-    <result column="meeting_abstruct" jdbcType="VARCHAR" property="meetingAbstruct" />
-    <result column="meeting_remarks" jdbcType="VARCHAR" property="meetingRemarks" />
-    <result column="meeting_type" jdbcType="INTEGER" property="meetingType" />
-  </resultMap>
-  <sql id="Example_Where_Clause">
-    <where>
-      <foreach collection="oredCriteria" item="criteria" separator="or">
-        <if test="criteria.valid">
-          <trim prefix="(" prefixOverrides="and" suffix=")">
-            <foreach collection="criteria.criteria" item="criterion">
-              <choose>
-                <when test="criterion.noValue">
-                  and ${criterion.condition}
-                </when>
-                <when test="criterion.singleValue">
-                  and ${criterion.condition} #{criterion.value}
-                </when>
-                <when test="criterion.betweenValue">
-                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
-                </when>
-                <when test="criterion.listValue">
-                  and ${criterion.condition}
-                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
-                    #{listItem}
-                  </foreach>
-                </when>
-              </choose>
-            </foreach>
-          </trim>
-        </if>
-      </foreach>
-    </where>
-  </sql>
-  <sql id="Update_By_Example_Where_Clause">
-    <where>
-      <foreach collection="example.oredCriteria" item="criteria" separator="or">
-        <if test="criteria.valid">
-          <trim prefix="(" prefixOverrides="and" suffix=")">
-            <foreach collection="criteria.criteria" item="criterion">
-              <choose>
-                <when test="criterion.noValue">
-                  and ${criterion.condition}
-                </when>
-                <when test="criterion.singleValue">
-                  and ${criterion.condition} #{criterion.value}
-                </when>
-                <when test="criterion.betweenValue">
-                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
-                </when>
-                <when test="criterion.listValue">
-                  and ${criterion.condition}
-                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
-                    #{listItem}
-                  </foreach>
-                </when>
-              </choose>
-            </foreach>
-          </trim>
-        </if>
-      </foreach>
-    </where>
-  </sql>
-  <sql id="Base_Column_List">
-    meeting_id, meeting_name, meeting_department, meeting_place, meeting_date, meeting_host, 
-    meeting_present, meeting_saver, meeting_abstruct, meeting_remarks, meeting_type
-  </sql>
-  <select id="selectByExample" parameterType="com.ronyao.bean.MeetingInfoExample" resultMap="BaseResultMap">
-    select
-    <if test="distinct">
-      distinct
-    </if>
-    <include refid="Base_Column_List" />
-    from tb_meetinfo
-    <if test="_parameter != null">
-      <include refid="Example_Where_Clause" />
-    </if>
-    <if test="orderByClause != null">
-      order by ${orderByClause}
-    </if>
-  </select>
-  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
-    select 
-    <include refid="Base_Column_List" />
-    from tb_meetinfo
-    where meeting_id = #{meetingId,jdbcType=INTEGER}
-  </select>
-  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
-    delete from tb_meetinfo
-    where meeting_id = #{meetingId,jdbcType=INTEGER}
-  </delete>
-  <delete id="deleteByExample" parameterType="com.ronyao.bean.MeetingInfoExample">
-    delete from tb_meetinfo
-    <if test="_parameter != null">
-      <include refid="Example_Where_Clause" />
-    </if>
-  </delete>
-  <insert id="insert" parameterType="com.ronyao.bean.MeetingInfo">
-    insert into tb_meetinfo (meeting_id, meeting_name, meeting_department, 
-      meeting_place, meeting_date, meeting_host, 
-      meeting_present, meeting_saver, meeting_abstruct, 
-      meeting_remarks, meeting_type)
-    values (#{meetingId,jdbcType=INTEGER}, #{meetingName,jdbcType=VARCHAR}, #{meetingDepartment,jdbcType=INTEGER}, 
-      #{meetingPlace,jdbcType=VARCHAR}, #{meetingDate,jdbcType=DATE}, #{meetingHost,jdbcType=VARCHAR}, 
-      #{meetingPresent,jdbcType=VARCHAR}, #{meetingSaver,jdbcType=VARCHAR}, #{meetingAbstruct,jdbcType=VARCHAR}, 
-      #{meetingRemarks,jdbcType=VARCHAR}, #{meetingType,jdbcType=INTEGER})
-  </insert>
-  <insert id="insertSelective" parameterType="com.ronyao.bean.MeetingInfo">
-    insert into tb_meetinfo
-    <trim prefix="(" suffix=")" suffixOverrides=",">
-      <if test="meetingId != null">
-        meeting_id,
-      </if>
-      <if test="meetingName != null">
-        meeting_name,
-      </if>
-      <if test="meetingDepartment != null">
-        meeting_department,
-      </if>
-      <if test="meetingPlace != null">
-        meeting_place,
-      </if>
-      <if test="meetingDate != null">
-        meeting_date,
-      </if>
-      <if test="meetingHost != null">
-        meeting_host,
-      </if>
-      <if test="meetingPresent != null">
-        meeting_present,
-      </if>
-      <if test="meetingSaver != null">
-        meeting_saver,
-      </if>
-      <if test="meetingAbstruct != null">
-        meeting_abstruct,
-      </if>
-      <if test="meetingRemarks != null">
-        meeting_remarks,
-      </if>
-      <if test="meetingType != null">
-        meeting_type,
-      </if>
-    </trim>
-    <trim prefix="values (" suffix=")" suffixOverrides=",">
-      <if test="meetingId != null">
-        #{meetingId,jdbcType=INTEGER},
-      </if>
-      <if test="meetingName != null">
-        #{meetingName,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingDepartment != null">
-        #{meetingDepartment,jdbcType=INTEGER},
-      </if>
-      <if test="meetingPlace != null">
-        #{meetingPlace,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingDate != null">
-        #{meetingDate,jdbcType=DATE},
-      </if>
-      <if test="meetingHost != null">
-        #{meetingHost,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingPresent != null">
-        #{meetingPresent,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingSaver != null">
-        #{meetingSaver,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingAbstruct != null">
-        #{meetingAbstruct,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingRemarks != null">
-        #{meetingRemarks,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingType != null">
-        #{meetingType,jdbcType=INTEGER},
-      </if>
-    </trim>
-  </insert>
-  <select id="countByExample" parameterType="com.ronyao.bean.MeetingInfoExample" resultType="java.lang.Long">
-    select count(*) from tb_meetinfo
-    <if test="_parameter != null">
-      <include refid="Example_Where_Clause" />
-    </if>
-  </select>
-  <update id="updateByExampleSelective" parameterType="map">
-    update tb_meetinfo
-    <set>
-      <if test="record.meetingId != null">
-        meeting_id = #{record.meetingId,jdbcType=INTEGER},
-      </if>
-      <if test="record.meetingName != null">
-        meeting_name = #{record.meetingName,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingDepartment != null">
-        meeting_department = #{record.meetingDepartment,jdbcType=INTEGER},
-      </if>
-      <if test="record.meetingPlace != null">
-        meeting_place = #{record.meetingPlace,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingDate != null">
-        meeting_date = #{record.meetingDate,jdbcType=DATE},
-      </if>
-      <if test="record.meetingHost != null">
-        meeting_host = #{record.meetingHost,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingPresent != null">
-        meeting_present = #{record.meetingPresent,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingSaver != null">
-        meeting_saver = #{record.meetingSaver,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingAbstruct != null">
-        meeting_abstruct = #{record.meetingAbstruct,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingRemarks != null">
-        meeting_remarks = #{record.meetingRemarks,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingType != null">
-        meeting_type = #{record.meetingType,jdbcType=INTEGER},
-      </if>
-    </set>
-    <if test="_parameter != null">
-      <include refid="Update_By_Example_Where_Clause" />
-    </if>
-  </update>
-  <update id="updateByExample" parameterType="map">
-    update tb_meetinfo
-    set meeting_id = #{record.meetingId,jdbcType=INTEGER},
-      meeting_name = #{record.meetingName,jdbcType=VARCHAR},
-      meeting_department = #{record.meetingDepartment,jdbcType=INTEGER},
-      meeting_place = #{record.meetingPlace,jdbcType=VARCHAR},
-      meeting_date = #{record.meetingDate,jdbcType=DATE},
-      meeting_host = #{record.meetingHost,jdbcType=VARCHAR},
-      meeting_present = #{record.meetingPresent,jdbcType=VARCHAR},
-      meeting_saver = #{record.meetingSaver,jdbcType=VARCHAR},
-      meeting_abstruct = #{record.meetingAbstruct,jdbcType=VARCHAR},
-      meeting_remarks = #{record.meetingRemarks,jdbcType=VARCHAR},
-      meeting_type = #{record.meetingType,jdbcType=INTEGER}
-    <if test="_parameter != null">
-      <include refid="Update_By_Example_Where_Clause" />
-    </if>
-  </update>
-  <update id="updateByPrimaryKeySelective" parameterType="com.ronyao.bean.MeetingInfo">
-    update tb_meetinfo
-    <set>
-      <if test="meetingName != null">
-        meeting_name = #{meetingName,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingDepartment != null">
-        meeting_department = #{meetingDepartment,jdbcType=INTEGER},
-      </if>
-      <if test="meetingPlace != null">
-        meeting_place = #{meetingPlace,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingDate != null">
-        meeting_date = #{meetingDate,jdbcType=DATE},
-      </if>
-      <if test="meetingHost != null">
-        meeting_host = #{meetingHost,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingPresent != null">
-        meeting_present = #{meetingPresent,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingSaver != null">
-        meeting_saver = #{meetingSaver,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingAbstruct != null">
-        meeting_abstruct = #{meetingAbstruct,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingRemarks != null">
-        meeting_remarks = #{meetingRemarks,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingType != null">
-        meeting_type = #{meetingType,jdbcType=INTEGER},
-      </if>
-    </set>
-    where meeting_id = #{meetingId,jdbcType=INTEGER}
-  </update>
-  <update id="updateByPrimaryKey" parameterType="com.ronyao.bean.MeetingInfo">
-    update tb_meetinfo
-    set meeting_name = #{meetingName,jdbcType=VARCHAR},
-      meeting_department = #{meetingDepartment,jdbcType=INTEGER},
-      meeting_place = #{meetingPlace,jdbcType=VARCHAR},
-      meeting_date = #{meetingDate,jdbcType=DATE},
-      meeting_host = #{meetingHost,jdbcType=VARCHAR},
-      meeting_present = #{meetingPresent,jdbcType=VARCHAR},
-      meeting_saver = #{meetingSaver,jdbcType=VARCHAR},
-      meeting_abstruct = #{meetingAbstruct,jdbcType=VARCHAR},
-      meeting_remarks = #{meetingRemarks,jdbcType=VARCHAR},
-      meeting_type = #{meetingType,jdbcType=INTEGER}
-    where meeting_id = #{meetingId,jdbcType=INTEGER}
-  </update>
-  <resultMap id="BaseResultMap" type="com.ronyao.bean.MeetingInfo">
-    <id column="meeting_id" jdbcType="INTEGER" property="meetingId" />
-    <result column="meeting_name" jdbcType="VARCHAR" property="meetingName" />
-    <result column="meeting_department" jdbcType="INTEGER" property="meetingDepartment" />
-    <result column="meeting_place" jdbcType="VARCHAR" property="meetingPlace" />
-    <result column="meeting_date" jdbcType="DATE" property="meetingDate" />
-    <result column="meeting_host" jdbcType="VARCHAR" property="meetingHost" />
-    <result column="meeting_present" jdbcType="VARCHAR" property="meetingPresent" />
-    <result column="meeting_saver" jdbcType="VARCHAR" property="meetingSaver" />
-    <result column="meeting_abstruct" jdbcType="VARCHAR" property="meetingAbstruct" />
-    <result column="meeting_remarks" jdbcType="VARCHAR" property="meetingRemarks" />
-    <result column="meeting_type" jdbcType="INTEGER" property="meetingType" />
-  </resultMap>
-  <sql id="Example_Where_Clause">
-    <where>
-      <foreach collection="oredCriteria" item="criteria" separator="or">
-        <if test="criteria.valid">
-          <trim prefix="(" prefixOverrides="and" suffix=")">
-            <foreach collection="criteria.criteria" item="criterion">
-              <choose>
-                <when test="criterion.noValue">
-                  and ${criterion.condition}
-                </when>
-                <when test="criterion.singleValue">
-                  and ${criterion.condition} #{criterion.value}
-                </when>
-                <when test="criterion.betweenValue">
-                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
-                </when>
-                <when test="criterion.listValue">
-                  and ${criterion.condition}
-                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
-                    #{listItem}
-                  </foreach>
-                </when>
-              </choose>
-            </foreach>
-          </trim>
-        </if>
-      </foreach>
-    </where>
-  </sql>
-  <sql id="Update_By_Example_Where_Clause">
-    <where>
-      <foreach collection="example.oredCriteria" item="criteria" separator="or">
-        <if test="criteria.valid">
-          <trim prefix="(" prefixOverrides="and" suffix=")">
-            <foreach collection="criteria.criteria" item="criterion">
-              <choose>
-                <when test="criterion.noValue">
-                  and ${criterion.condition}
-                </when>
-                <when test="criterion.singleValue">
-                  and ${criterion.condition} #{criterion.value}
-                </when>
-                <when test="criterion.betweenValue">
-                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
-                </when>
-                <when test="criterion.listValue">
-                  and ${criterion.condition}
-                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
-                    #{listItem}
-                  </foreach>
-                </when>
-              </choose>
-            </foreach>
-          </trim>
-        </if>
-      </foreach>
-    </where>
-  </sql>
-  <sql id="Base_Column_List">
-    meeting_id, meeting_name, meeting_department, meeting_place, meeting_date, meeting_host, 
-    meeting_present, meeting_saver, meeting_abstruct, meeting_remarks, meeting_type
-  </sql>
-  <select id="selectByExample" parameterType="com.ronyao.bean.MeetingInfoExample" resultMap="BaseResultMap">
-    select
-    <if test="distinct">
-      distinct
-    </if>
-    <include refid="Base_Column_List" />
-    from tb_meetinfo
-    <if test="_parameter != null">
-      <include refid="Example_Where_Clause" />
-    </if>
-    <if test="orderByClause != null">
-      order by ${orderByClause}
-    </if>
-  </select>
-  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
-    select 
-    <include refid="Base_Column_List" />
-    from tb_meetinfo
-    where meeting_id = #{meetingId,jdbcType=INTEGER}
-  </select>
-  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
-    delete from tb_meetinfo
-    where meeting_id = #{meetingId,jdbcType=INTEGER}
-  </delete>
-  <delete id="deleteByExample" parameterType="com.ronyao.bean.MeetingInfoExample">
-    delete from tb_meetinfo
-    <if test="_parameter != null">
-      <include refid="Example_Where_Clause" />
-    </if>
-  </delete>
-  <insert id="insert" parameterType="com.ronyao.bean.MeetingInfo">
-    insert into tb_meetinfo (meeting_id, meeting_name, meeting_department, 
-      meeting_place, meeting_date, meeting_host, 
-      meeting_present, meeting_saver, meeting_abstruct, 
-      meeting_remarks, meeting_type)
-    values (#{meetingId,jdbcType=INTEGER}, #{meetingName,jdbcType=VARCHAR}, #{meetingDepartment,jdbcType=INTEGER}, 
-      #{meetingPlace,jdbcType=VARCHAR}, #{meetingDate,jdbcType=DATE}, #{meetingHost,jdbcType=VARCHAR}, 
-      #{meetingPresent,jdbcType=VARCHAR}, #{meetingSaver,jdbcType=VARCHAR}, #{meetingAbstruct,jdbcType=VARCHAR}, 
-      #{meetingRemarks,jdbcType=VARCHAR}, #{meetingType,jdbcType=INTEGER})
-  </insert>
-  <insert id="insertSelective" parameterType="com.ronyao.bean.MeetingInfo">
-    insert into tb_meetinfo
-    <trim prefix="(" suffix=")" suffixOverrides=",">
-      <if test="meetingId != null">
-        meeting_id,
-      </if>
-      <if test="meetingName != null">
-        meeting_name,
-      </if>
-      <if test="meetingDepartment != null">
-        meeting_department,
-      </if>
-      <if test="meetingPlace != null">
-        meeting_place,
-      </if>
-      <if test="meetingDate != null">
-        meeting_date,
-      </if>
-      <if test="meetingHost != null">
-        meeting_host,
-      </if>
-      <if test="meetingPresent != null">
-        meeting_present,
-      </if>
-      <if test="meetingSaver != null">
-        meeting_saver,
-      </if>
-      <if test="meetingAbstruct != null">
-        meeting_abstruct,
-      </if>
-      <if test="meetingRemarks != null">
-        meeting_remarks,
-      </if>
-      <if test="meetingType != null">
-        meeting_type,
-      </if>
-    </trim>
-    <trim prefix="values (" suffix=")" suffixOverrides=",">
-      <if test="meetingId != null">
-        #{meetingId,jdbcType=INTEGER},
-      </if>
-      <if test="meetingName != null">
-        #{meetingName,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingDepartment != null">
-        #{meetingDepartment,jdbcType=INTEGER},
-      </if>
-      <if test="meetingPlace != null">
-        #{meetingPlace,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingDate != null">
-        #{meetingDate,jdbcType=DATE},
-      </if>
-      <if test="meetingHost != null">
-        #{meetingHost,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingPresent != null">
-        #{meetingPresent,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingSaver != null">
-        #{meetingSaver,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingAbstruct != null">
-        #{meetingAbstruct,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingRemarks != null">
-        #{meetingRemarks,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingType != null">
-        #{meetingType,jdbcType=INTEGER},
-      </if>
-    </trim>
-  </insert>
-  <select id="countByExample" parameterType="com.ronyao.bean.MeetingInfoExample" resultType="java.lang.Long">
-    select count(*) from tb_meetinfo
-    <if test="_parameter != null">
-      <include refid="Example_Where_Clause" />
-    </if>
-  </select>
-  <update id="updateByExampleSelective" parameterType="map">
-    update tb_meetinfo
-    <set>
-      <if test="record.meetingId != null">
-        meeting_id = #{record.meetingId,jdbcType=INTEGER},
-      </if>
-      <if test="record.meetingName != null">
-        meeting_name = #{record.meetingName,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingDepartment != null">
-        meeting_department = #{record.meetingDepartment,jdbcType=INTEGER},
-      </if>
-      <if test="record.meetingPlace != null">
-        meeting_place = #{record.meetingPlace,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingDate != null">
-        meeting_date = #{record.meetingDate,jdbcType=DATE},
-      </if>
-      <if test="record.meetingHost != null">
-        meeting_host = #{record.meetingHost,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingPresent != null">
-        meeting_present = #{record.meetingPresent,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingSaver != null">
-        meeting_saver = #{record.meetingSaver,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingAbstruct != null">
-        meeting_abstruct = #{record.meetingAbstruct,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingRemarks != null">
-        meeting_remarks = #{record.meetingRemarks,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingType != null">
-        meeting_type = #{record.meetingType,jdbcType=INTEGER},
-      </if>
-    </set>
-    <if test="_parameter != null">
-      <include refid="Update_By_Example_Where_Clause" />
-    </if>
-  </update>
-  <update id="updateByExample" parameterType="map">
-    update tb_meetinfo
-    set meeting_id = #{record.meetingId,jdbcType=INTEGER},
-      meeting_name = #{record.meetingName,jdbcType=VARCHAR},
-      meeting_department = #{record.meetingDepartment,jdbcType=INTEGER},
-      meeting_place = #{record.meetingPlace,jdbcType=VARCHAR},
-      meeting_date = #{record.meetingDate,jdbcType=DATE},
-      meeting_host = #{record.meetingHost,jdbcType=VARCHAR},
-      meeting_present = #{record.meetingPresent,jdbcType=VARCHAR},
-      meeting_saver = #{record.meetingSaver,jdbcType=VARCHAR},
-      meeting_abstruct = #{record.meetingAbstruct,jdbcType=VARCHAR},
-      meeting_remarks = #{record.meetingRemarks,jdbcType=VARCHAR},
-      meeting_type = #{record.meetingType,jdbcType=INTEGER}
-    <if test="_parameter != null">
-      <include refid="Update_By_Example_Where_Clause" />
-    </if>
-  </update>
-  <update id="updateByPrimaryKeySelective" parameterType="com.ronyao.bean.MeetingInfo">
-    update tb_meetinfo
-    <set>
-      <if test="meetingName != null">
-        meeting_name = #{meetingName,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingDepartment != null">
-        meeting_department = #{meetingDepartment,jdbcType=INTEGER},
-      </if>
-      <if test="meetingPlace != null">
-        meeting_place = #{meetingPlace,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingDate != null">
-        meeting_date = #{meetingDate,jdbcType=DATE},
-      </if>
-      <if test="meetingHost != null">
-        meeting_host = #{meetingHost,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingPresent != null">
-        meeting_present = #{meetingPresent,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingSaver != null">
-        meeting_saver = #{meetingSaver,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingAbstruct != null">
-        meeting_abstruct = #{meetingAbstruct,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingRemarks != null">
-        meeting_remarks = #{meetingRemarks,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingType != null">
-        meeting_type = #{meetingType,jdbcType=INTEGER},
-      </if>
-    </set>
-    where meeting_id = #{meetingId,jdbcType=INTEGER}
-  </update>
-  <update id="updateByPrimaryKey" parameterType="com.ronyao.bean.MeetingInfo">
-    update tb_meetinfo
-    set meeting_name = #{meetingName,jdbcType=VARCHAR},
-      meeting_department = #{meetingDepartment,jdbcType=INTEGER},
-      meeting_place = #{meetingPlace,jdbcType=VARCHAR},
-      meeting_date = #{meetingDate,jdbcType=DATE},
-      meeting_host = #{meetingHost,jdbcType=VARCHAR},
-      meeting_present = #{meetingPresent,jdbcType=VARCHAR},
-      meeting_saver = #{meetingSaver,jdbcType=VARCHAR},
-      meeting_abstruct = #{meetingAbstruct,jdbcType=VARCHAR},
-      meeting_remarks = #{meetingRemarks,jdbcType=VARCHAR},
-      meeting_type = #{meetingType,jdbcType=INTEGER}
-    where meeting_id = #{meetingId,jdbcType=INTEGER}
-  </update>
-  <resultMap id="BaseResultMap" type="com.ronyao.bean.MeetingInfo">
-    <id column="meeting_id" jdbcType="INTEGER" property="meetingId" />
-    <result column="meeting_name" jdbcType="VARCHAR" property="meetingName" />
-    <result column="meeting_department" jdbcType="INTEGER" property="meetingDepartment" />
-    <result column="meeting_place" jdbcType="VARCHAR" property="meetingPlace" />
-    <result column="meeting_date" jdbcType="DATE" property="meetingDate" />
-    <result column="meeting_host" jdbcType="VARCHAR" property="meetingHost" />
-    <result column="meeting_present" jdbcType="VARCHAR" property="meetingPresent" />
-    <result column="meeting_saver" jdbcType="VARCHAR" property="meetingSaver" />
-    <result column="meeting_abstruct" jdbcType="VARCHAR" property="meetingAbstruct" />
-    <result column="meeting_remarks" jdbcType="VARCHAR" property="meetingRemarks" />
-    <result column="meeting_type" jdbcType="INTEGER" property="meetingType" />
-  </resultMap>
-  <sql id="Example_Where_Clause">
-    <where>
-      <foreach collection="oredCriteria" item="criteria" separator="or">
-        <if test="criteria.valid">
-          <trim prefix="(" prefixOverrides="and" suffix=")">
-            <foreach collection="criteria.criteria" item="criterion">
-              <choose>
-                <when test="criterion.noValue">
-                  and ${criterion.condition}
-                </when>
-                <when test="criterion.singleValue">
-                  and ${criterion.condition} #{criterion.value}
-                </when>
-                <when test="criterion.betweenValue">
-                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
-                </when>
-                <when test="criterion.listValue">
-                  and ${criterion.condition}
-                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
-                    #{listItem}
-                  </foreach>
-                </when>
-              </choose>
-            </foreach>
-          </trim>
-        </if>
-      </foreach>
-    </where>
-  </sql>
-  <sql id="Update_By_Example_Where_Clause">
-    <where>
-      <foreach collection="example.oredCriteria" item="criteria" separator="or">
-        <if test="criteria.valid">
-          <trim prefix="(" prefixOverrides="and" suffix=")">
-            <foreach collection="criteria.criteria" item="criterion">
-              <choose>
-                <when test="criterion.noValue">
-                  and ${criterion.condition}
-                </when>
-                <when test="criterion.singleValue">
-                  and ${criterion.condition} #{criterion.value}
-                </when>
-                <when test="criterion.betweenValue">
-                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
-                </when>
-                <when test="criterion.listValue">
-                  and ${criterion.condition}
-                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
-                    #{listItem}
-                  </foreach>
-                </when>
-              </choose>
-            </foreach>
-          </trim>
-        </if>
-      </foreach>
-    </where>
-  </sql>
-  <sql id="Base_Column_List">
-    meeting_id, meeting_name, meeting_department, meeting_place, meeting_date, meeting_host, 
-    meeting_present, meeting_saver, meeting_abstruct, meeting_remarks, meeting_type
-  </sql>
-  <select id="selectByExample" parameterType="com.ronyao.bean.MeetingInfoExample" resultMap="BaseResultMap">
-    select
-    <if test="distinct">
-      distinct
-    </if>
-    <include refid="Base_Column_List" />
-    from tb_meetinfo
-    <if test="_parameter != null">
-      <include refid="Example_Where_Clause" />
-    </if>
-    <if test="orderByClause != null">
-      order by ${orderByClause}
-    </if>
-  </select>
-  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
-    select 
-    <include refid="Base_Column_List" />
-    from tb_meetinfo
-    where meeting_id = #{meetingId,jdbcType=INTEGER}
-  </select>
-  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
-    delete from tb_meetinfo
-    where meeting_id = #{meetingId,jdbcType=INTEGER}
-  </delete>
-  <delete id="deleteByExample" parameterType="com.ronyao.bean.MeetingInfoExample">
-    delete from tb_meetinfo
-    <if test="_parameter != null">
-      <include refid="Example_Where_Clause" />
-    </if>
-  </delete>
-  <insert id="insert" parameterType="com.ronyao.bean.MeetingInfo">
-    insert into tb_meetinfo (meeting_id, meeting_name, meeting_department, 
-      meeting_place, meeting_date, meeting_host, 
-      meeting_present, meeting_saver, meeting_abstruct, 
-      meeting_remarks, meeting_type)
-    values (#{meetingId,jdbcType=INTEGER}, #{meetingName,jdbcType=VARCHAR}, #{meetingDepartment,jdbcType=INTEGER}, 
-      #{meetingPlace,jdbcType=VARCHAR}, #{meetingDate,jdbcType=DATE}, #{meetingHost,jdbcType=VARCHAR}, 
-      #{meetingPresent,jdbcType=VARCHAR}, #{meetingSaver,jdbcType=VARCHAR}, #{meetingAbstruct,jdbcType=VARCHAR}, 
-      #{meetingRemarks,jdbcType=VARCHAR}, #{meetingType,jdbcType=INTEGER})
-  </insert>
-  <insert id="insertSelective" parameterType="com.ronyao.bean.MeetingInfo">
-    insert into tb_meetinfo
-    <trim prefix="(" suffix=")" suffixOverrides=",">
-      <if test="meetingId != null">
-        meeting_id,
-      </if>
-      <if test="meetingName != null">
-        meeting_name,
-      </if>
-      <if test="meetingDepartment != null">
-        meeting_department,
-      </if>
-      <if test="meetingPlace != null">
-        meeting_place,
-      </if>
-      <if test="meetingDate != null">
-        meeting_date,
-      </if>
-      <if test="meetingHost != null">
-        meeting_host,
-      </if>
-      <if test="meetingPresent != null">
-        meeting_present,
-      </if>
-      <if test="meetingSaver != null">
-        meeting_saver,
-      </if>
-      <if test="meetingAbstruct != null">
-        meeting_abstruct,
-      </if>
-      <if test="meetingRemarks != null">
-        meeting_remarks,
-      </if>
-      <if test="meetingType != null">
-        meeting_type,
-      </if>
-    </trim>
-    <trim prefix="values (" suffix=")" suffixOverrides=",">
-      <if test="meetingId != null">
-        #{meetingId,jdbcType=INTEGER},
-      </if>
-      <if test="meetingName != null">
-        #{meetingName,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingDepartment != null">
-        #{meetingDepartment,jdbcType=INTEGER},
-      </if>
-      <if test="meetingPlace != null">
-        #{meetingPlace,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingDate != null">
-        #{meetingDate,jdbcType=DATE},
-      </if>
-      <if test="meetingHost != null">
-        #{meetingHost,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingPresent != null">
-        #{meetingPresent,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingSaver != null">
-        #{meetingSaver,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingAbstruct != null">
-        #{meetingAbstruct,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingRemarks != null">
-        #{meetingRemarks,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingType != null">
-        #{meetingType,jdbcType=INTEGER},
-      </if>
-    </trim>
-  </insert>
-  <select id="countByExample" parameterType="com.ronyao.bean.MeetingInfoExample" resultType="java.lang.Long">
-    select count(*) from tb_meetinfo
-    <if test="_parameter != null">
-      <include refid="Example_Where_Clause" />
-    </if>
-  </select>
-  <update id="updateByExampleSelective" parameterType="map">
-    update tb_meetinfo
-    <set>
-      <if test="record.meetingId != null">
-        meeting_id = #{record.meetingId,jdbcType=INTEGER},
-      </if>
-      <if test="record.meetingName != null">
-        meeting_name = #{record.meetingName,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingDepartment != null">
-        meeting_department = #{record.meetingDepartment,jdbcType=INTEGER},
-      </if>
-      <if test="record.meetingPlace != null">
-        meeting_place = #{record.meetingPlace,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingDate != null">
-        meeting_date = #{record.meetingDate,jdbcType=DATE},
-      </if>
-      <if test="record.meetingHost != null">
-        meeting_host = #{record.meetingHost,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingPresent != null">
-        meeting_present = #{record.meetingPresent,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingSaver != null">
-        meeting_saver = #{record.meetingSaver,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingAbstruct != null">
-        meeting_abstruct = #{record.meetingAbstruct,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingRemarks != null">
-        meeting_remarks = #{record.meetingRemarks,jdbcType=VARCHAR},
-      </if>
-      <if test="record.meetingType != null">
-        meeting_type = #{record.meetingType,jdbcType=INTEGER},
-      </if>
-    </set>
-    <if test="_parameter != null">
-      <include refid="Update_By_Example_Where_Clause" />
-    </if>
-  </update>
-  <update id="updateByExample" parameterType="map">
-    update tb_meetinfo
-    set meeting_id = #{record.meetingId,jdbcType=INTEGER},
-      meeting_name = #{record.meetingName,jdbcType=VARCHAR},
-      meeting_department = #{record.meetingDepartment,jdbcType=INTEGER},
-      meeting_place = #{record.meetingPlace,jdbcType=VARCHAR},
-      meeting_date = #{record.meetingDate,jdbcType=DATE},
-      meeting_host = #{record.meetingHost,jdbcType=VARCHAR},
-      meeting_present = #{record.meetingPresent,jdbcType=VARCHAR},
-      meeting_saver = #{record.meetingSaver,jdbcType=VARCHAR},
-      meeting_abstruct = #{record.meetingAbstruct,jdbcType=VARCHAR},
-      meeting_remarks = #{record.meetingRemarks,jdbcType=VARCHAR},
-      meeting_type = #{record.meetingType,jdbcType=INTEGER}
-    <if test="_parameter != null">
-      <include refid="Update_By_Example_Where_Clause" />
-    </if>
-  </update>
-  <update id="updateByPrimaryKeySelective" parameterType="com.ronyao.bean.MeetingInfo">
-    update tb_meetinfo
-    <set>
-      <if test="meetingName != null">
-        meeting_name = #{meetingName,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingDepartment != null">
-        meeting_department = #{meetingDepartment,jdbcType=INTEGER},
-      </if>
-      <if test="meetingPlace != null">
-        meeting_place = #{meetingPlace,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingDate != null">
-        meeting_date = #{meetingDate,jdbcType=DATE},
-      </if>
-      <if test="meetingHost != null">
-        meeting_host = #{meetingHost,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingPresent != null">
-        meeting_present = #{meetingPresent,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingSaver != null">
-        meeting_saver = #{meetingSaver,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingAbstruct != null">
-        meeting_abstruct = #{meetingAbstruct,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingRemarks != null">
-        meeting_remarks = #{meetingRemarks,jdbcType=VARCHAR},
-      </if>
-      <if test="meetingType != null">
-        meeting_type = #{meetingType,jdbcType=INTEGER},
-      </if>
-    </set>
+      meeting_type = #{meetingType,jdbcType=INTEGER},
+      meeting_content = #{meetingContent,jdbcType=LONGVARCHAR}
     where meeting_id = #{meetingId,jdbcType=INTEGER}
   </update>
   <update id="updateByPrimaryKey" parameterType="com.ronyao.bean.MeetingInfo">

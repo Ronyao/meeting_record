@@ -35,7 +35,7 @@
     <table tableName="tb_depart" domainObjectName="Department"></table>
     <table tableName="tb_meetfile" domainObjectName="MeetingFile"></table>
     <table tableName="tb_meetinfo" domainObjectName="MeetingInfo"></table>
-    <table tableName="tb_meettype" domainObjectName="MettingType"></table>
+    <table tableName="tb_meettype" domainObjectName="MeetingType"></table>
     <table tableName="tb_user" domainObjectName="User"></table>
 
   </context>

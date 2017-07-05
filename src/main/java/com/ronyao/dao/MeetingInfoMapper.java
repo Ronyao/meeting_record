@@ -16,15 +16,25 @@ public interface MeetingInfoMapper {
 
     int insertSelective(MeetingInfo record);
 
+    List<MeetingInfo> selectByExampleWithBLOBs(MeetingInfoExample example);
+
     List<MeetingInfo> selectByExample(MeetingInfoExample example);
 
     MeetingInfo selectByPrimaryKey(Integer meetingId);
 
     int updateByExampleSelective(@Param("record") MeetingInfo record, @Param("example") MeetingInfoExample example);
 
+    int updateByExampleWithBLOBs(@Param("record") MeetingInfo record, @Param("example") MeetingInfoExample example);
+
     int updateByExample(@Param("record") MeetingInfo record, @Param("example") MeetingInfoExample example);
 
     int updateByPrimaryKeySelective(MeetingInfo record);
 
+    int updateByPrimaryKeyWithBLOBs(MeetingInfo record);
+
     int updateByPrimaryKey(MeetingInfo record);
+
+    List<MeetingInfo> getAllMeetingInfo();
+
+    List<MeetingInfo> selectByWithDeptAndType(MeetingInfoExample example);
 }
